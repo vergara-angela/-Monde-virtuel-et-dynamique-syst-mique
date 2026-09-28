@@ -52,7 +52,12 @@ Voir le dossier `RAPPORTS/` pour le rapport complet avec captures d'écran et gr
 
 ## Contribution
 
-Projet de groupe (2 personnes). Ma contribution portait sur [à compléter : par exemple "la logique des agents et le système de maladie/guérison" ou "l'environnement et les aléas naturels"].
+Projet de groupe (2 personnes). Ma contribution portait sur la partie environnement : génération procédurale du terrain, cycle temporel (jour/nuit, saisons), gestion de la température, et régénération naturelle (herbe, arbres, montagnes).
+
+J'ai notamment implémenté les interactions suivantes :
+- **Environnement → Environnement** : propagation du feu de forêt, écoulement/gel/évaporation de l'eau de montagne, montée des eaux en saison de pluie
+- **Environnement → Agent** : immobilité nocturne, probabilité de déplacement selon le type de sol, insolation, mort par feu ou noyade
+- **Agent → Environnement** : abattage d'arbres (risque d'incendie), plantation d'arbres (baisse de température)
 
 ## Authors and acknowledgment
 Show your appreciation to those who have contributed to the project.
