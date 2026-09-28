@@ -1,0 +1,302 @@
+PROJET : Jeu de la vie – Simulation multi-agents
+
+-------------------------------------------------------------------------------
+
+Organisation :
+Mardi : Clarifier ou rajouter les idées qu'on veut implémenter.
+Jeudi :  Coder le max d'idées puis se répartir les taches pour la semaine.
+
+-------------------------------------------------------------------------------
+
+Durée : 7 semaines (1 sprint = 1 semaine)
+
+-------------------------------------------------------------------------------
+
+SEMAINE 1 (24/02): Simulation de base
+(-> essayer d'implémenter la simulation de base avec des images directement si on y arrive lol)
+
+  - ENVIRONNEMENT (simple pour l'instant) -
+------ etat : ------
+SEA = 0
+SAND = 1
+GRASS = 2
+FIRE = 3
+MONT1 = 4
+MONT2 = 5
+
+TREE = 6
+FLOWER = 7
+ROCK = 8
+
+FIRE = 9
+WATER = 10
+
+PREY_TRAIL = 11
+PREDATOR_TRAIL = 12
+
+------- implémentation d'un générateur aléatoire : --------
+- générateur d'altitude (bruit de Perlin) : 
+    altitude < 0.30  ->  SEA
+    altitude < 0.31  ->  SAND
+    altitude < 0.40  ->  GRASS
+    altitude < 0.50  ->  MONT1
+    altitude >= 0.50 ->  MONT2
+
+- placement aléatoire de graine + génération procédurale :
+    "seed_value": 42 (changement de la seed dans params)
+    seed_value = params["seed_value"]
+    random.seed(seed_value)
+    -> placement des éléments (TREE, ROCK, FLOWER)
+    -> génération du terrain (SEA, SAND, GRASS, MONT1, MONT2)
+
+ - CREATION DES AGENTS - 
+----- mouvement -----
+-> escargot = réduite (neumann)
+-> humain = large (Moore)
+
+-------------------------------------------------------------------------------
+SEMAINE 2 (03/03): Agent sur Agent
+
+------- implémentation des agents : --------
+
+
+Règles communes aux agents:
+	-> Se déplacent moins vite en montagne
+	-> Meurent lorsqu'ils croisent un arbre en feu ou un écoulement d'eau
+
+- HUMAIN (prOIE) -
+
+    SANE :
+        -> Vision: voit les prédateur à x cases selon le voisinage de Moore
+	-> Déplacement: fuit un prédateur dans son entourage, sinon déplacement aléatoire
+	-> Reproduction: se reproduit d’après une certaines probabilité s’il croise un autre agent 
+	-> Maladie: peut tomber malade aléatoirement ou s’il croise un agent infecté  
+	-> Nourriture: se nourrit de rochers dès qu’il se trouve sur la même case que ceux-ci; sa jauge de famine est remise à 0 ( + faim plus courte que les prédateurs ?)
+	-> Mort: meurt s’il est mangé par un prédateur, s’il sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+    INFECTED :
+	-> Vision: voit les prédateur à x cases selon le voisinage de Moore (vision réduite ?)
+        -> Déplacement: fuit un prédateur dans son entourage, son déplacement est ralenti (un tirage aléatoire est fait pour savoir s’il va se déplacer). Sinon déplacement aléatoire
+	-> Reproduction: ne peut plus se reproduire
+	-> Maladie: guérit au bout d'un certain temps
+	-> Nourriture: se nourrit de rochers dès qu’il se trouve sur la même case que ceux-ci; sa jauge de famine est remise à 0
+	-> Mort: meurt s’il est mangé par un prédateur, si sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+    RECOVER :
+	-> Vision: voit les prédateur à x cases selon le voisinage de Moore
+	-> Déplacement : fuit un prédateur dans son entourage, sinon déplacement aléatoire (+ son déplacement est ralenti à vie ?)
+	-> Reproduction: se reproduit d’après une certaines probabilité s’il croise un autre agent
+        -> Maladie: immunisé, ne peut plus tomber malade
+	-> Nourriture: se nourrit de rochers dès qu’il se trouve sur la même case que ceux-ci; sa jauge de famine est remise à 0
+	-> Mort: meurt s’il est mangé par un prédateur, si sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+
+
+- CHICKEN (predateur) -
+
+    SANE :
+	-> Vision: voit à y cases selon le voisinage de Van Neumann
+	-> Déplacement: chasse une proie dans son entourage; déplacement aléatoire sinon
+	-> Reproduction: se reproduit d’après une certaines probabilité, tout seul
+	-> Malade: tombe malade s’il mange une proie malade
+	-> Nourriture: se nourrit en chassant et mangeant des humains; sa jauge de famine est remise à 0
+	-> Mort: meurt si sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+    INFECTED :
+	-> Vision: voit à y cases selon le voisinage de Von Neumann (vision réduite)
+        -> Déplacement: son déplacement est ralenti (un tirage aléatoire est fait pour savoir s’il va se déplacer)
+	-> Reproduction: ne peut plus se reproduire
+	-> Maladie: guérit au bout d'un certain temps
+	-> Nourriture: chasse une fois sur deux; sa jauge de famine est remise à 0
+	-> Mort: meurt si sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+    RECOVER :
+        -> Vision: voit à y cases selon le voisinage de Van Neumann
+	-> Déplacement: chasse une proie dans son entourage; déplacement aléatoire sinon
+	-> Reproduction: se reproduit d’après une certaines probabilité, tout seul
+	-> Malade: (peut tomber malade ou immunisé ?)
+	-> Nourriture: se nourrit en chassant et mangeant des humains; sa jauge de famine est remise à 0
+	-> Mort: meurt si sa jauge de famine atteint le seuil défini, ou si sa durée de vie est écoulée
+
+
+
+-----------------------------------------------------------------------------
+
+SEMAINE 3 (10 /03) : Impact de l’environnement sur les agents
+
+
+  - ENVIRONNEMENT -
+
+------ Conditions environnementales : ------
+
+  - SYSTEME TEMPS / JOUR/NUIT / SAISONS -
+- Cycle du temps :
+    secondes : incrément 1 → 60, reset à 1
+    heures : incrément 1 → 24, reset à 1
+    jours : incrément 1 → 30, reset à 1
+    mois : incrément 1 → 12, reset à 1
+- Cycle jour/nuit :
+    heure % 14 = nuit (23h-9h)
+    heure % 24 = jour (9h-23h)
+- Saisons :
+    juin → saison pluie
+    octobre → saison sèche
+
+  - METEO / TEMPERATURE (inspiration Philippines) -
+- Température selon jour/nuit et saison :
+    saison sèche : 
+		-jour : 30–35 °C
+		-nuit : 25–28 °C
+	saison de pluie :
+		-jour : 26–31 °C
+		-nuit : 23–26 °C
+- Moyenne annuelle température :
+    temperature_moy = temperature_moy + (temperature - temperature_moy)/compteur_moy_temp
+
+------ Aléas Naturelles : ------
+
+  - DEFORESTATION ET FEU -
+- TREE → FIRETREE si dict_coupe_bois[(x,y)] > 60 (impact des agents sur l'environnement)
+- TREE → FIRETREE si voisin immédiat est FIRETREE (impact de l'environnement sur l'environnement)
+- FIRETREE → TRONC (+0.2 °C) (réchauffement climatique) (impact de l'environnement sur l'environnement)
+- TRONC → GRASS
+
+  - GLACES ET EAU -
+- MONT2 → MONT2_WATER si jour + temp>30 + probabilité p_fonte + saison pluie (impact de l'environnement sur l'environnement)
+- MONT2_WATER → MONT2 (impact de l'environnement sur l'environnement) si :
+	Solidification : nuit + temp<35 + sol=MONT2 
+	Absorption dans GRASS/SAND avec probabilité p_absorption
+	Evaporation tous les 3h si temp>32
+
+  - ECOULEMENT D'EAU (saison de sèche, impact de l'environnement sur l'environnement)-
+- Tous les 3h, propagation MONT2_WATER selon probabilité p_ecoulement et direction aléatoire
+
+  - MONTEE D'EAU (saison de pluie, impact de l'environnement sur l'environnement) -
+- Fin de mois, chaque 6h
+- temperature_moy > 25, saison pluie
+- Propagation SEA selon probabilité p_ecoulement et direction aléatoire
+
+
+  - Agent -
+Agents
+
+------Conditions environnementales ----
+
+Espace / Terrain
+[ ] Montagne : mouvement plus lent
+[ok] Eau : agents non aquatiques meurent ou se déplacent difficilement
+[ ] Obstacles naturels (rochers, arbres) : limitent le déplacement
+
+Climat / Température
+[ ] Température élevée : risque de mort ou ralentissement
+[ ] Température basse : ralentissement ou gel pour certains agents
+[ ] Température moyenne : influence la faim et reproduction
+
+Jour / Nuit
+[ ] Les agents dorment la nuit (ralentissement ou immobilisation)
+[ ] Les humains se réveillent en premier (priorité dans l’action)
+
+Saisons / Conditions météorologiques
+[ ] Saison de pluie : propagation de maladies aléatoire
+[ ] Saison sèche : risque de soif/famine (moins d'eau?)
+
+Catastrophes naturelles
+[ ] Feu de forêt : mort immédiate si contact
+[ ] Écoulement / montée des eaux : noyade ou déplacement forcé
+
+Autres impacts
+[ ] Réchauffement local (ex. feu) peut influencer la santé des agents
+[ ] Gel ou fonte d’eau en montagne : influence accès aux ressources et chemins mais si mm case meurt
+
+-> commencer pour la semaine 4
+-------------------------------------------------------------------------------
+
+SEMAINE 4 (17 / 03) : Impact des agents sur l’environnement
+
+Modification de l'Environnement par les agents
+
+----- Catastrophe naturelle ------
+[ok] Arbre prend feu lorsqu'un humain coupe bcp de bois (Fait dans le Sprint 3)
+[ok] Agents peuvent déclencher un incendie accidentel sur GRASS (ex. feu de camp humain mal éteint)
+
+----- Espace -------
+[ok] L’herbe devient sèche lorsqu’un agent passe plusieurs fois dessus
+
+----- Nourriture ---- 
+[ok] Humain: mangent les montagnes de cailloux, elles disparaissent petit à petit
+
+
+---- Plantation -------
+[ok] Humain peut planter des arbres
+
+-------------------------------------------------------------------------------
+
+SEMAINE 5 (24 / 03) : impact de l'environnement sur l'environnement
+
+------ Conditions environnementales ------
+
+Espace / Terrain
+[ok] Propagation de l’eau selon relief (Montée des eaux, Ecoulement d'eau) 
+[ok] Solidification de l’eau en altitude la nuit (MONT2_WATER → MONT2)
+[ok] Fonte des glaces selon température et probabilité (MONT2 → MONT2_WATER)
+[ok] un arbre spawn selon une proba
+[ok] regénération des arbres au bout de n itérations
+
+Climat / Température
+[ok] Réchauffement local lors de feu de forêt (FIRETREE → TRONC, +0.2°C)
+[ok] Température moyenne influence la montée des eaux (SEA)
+NEW [ok] Temperature moyenne augmente la proba des feu des arbres
+
+Saison 
+[ok] les végétaux poussent plus vite en saison de pluie
+
+Jour / Nuit
+[ ] La condensation nocturne peut remplir légèrement certaines cases d’eau (rosée)
+[ ] Gel nocturne léger sur MONT1 ou GRASS si temp<20 °C
+
+------ Aléas Naturels ------
+
+Déforestation et feu
+[ok] Arbres voisins en feu déclenchent propagation du feu (TREE → FIRETREE)
+[ok] Arbres brûlés deviennent TRONC puis GRASS
+
+Ecoulement d'eau (fonte des glaces)
+[ok] Solidification : nuit + temp basse transforme MONT2_WATER → MONT2
+[ok] Absorption par le sol (GRASS/SAND) limite l’eau libre
+[ok] Écoulement d’eau selon probabilité et direction
+
+Montée des eaux
+[ok] Montée d’eau en saison pluie selon température moyenne
+
+-------------------------------------------------------------------------------
+
+SEMAINE 6 (31 / 04) : amélioration
+
+[ ] Finir ce qu'on a pas pu finir. 
+[ ] rajout de ce qu'on veut.
+
+-------------------------------------------------------------------------------
+
+SEMAINE 7 (07 / 04) : Stabilisation et amélioration
+
+Simulation
+[ ] Ajout de statistiques (population, mortalité, infection)
+[ ] Ajustement des paramètres
+[ ] Correction des bugs
+[ ] Préparation de la démonstration finale
+
+-> commencer pour la semaine 8
+-------------------------------------------------------------------------------
+
+SEMAINE 8 (14 / 04) : Soutenance de projets
+
+[ ] Rapport de 5 pages:
+- guide simple pour lancer le code
+- liste des fonctionnalité
+- photos d’écran
+- graphe montrant une dynamique à long terme
+
+[ ] rendu du rapport Github
+
+Soutenance en salle de TME (16/04):
+-> Démo de 2x5 minutes
